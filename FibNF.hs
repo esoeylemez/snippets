@@ -32,8 +32,8 @@ instance (Eq a, Num a, Reifies r a) => Num (NF r a) where
 
     abs = id
     negate (NF a b) = NF (-a) (-b)
-    signum (NF 0 0) = NF 0 0
-    signum x = x
+    signum x@(NF 0 0) = x
+    signum _ = NF 1 0
 
     fromInteger ix = NF (fromInteger ix) 0
 
