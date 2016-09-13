@@ -4,8 +4,6 @@
 -- Maintainer: Ertugrul Söylemez <esz@posteo.de>
 -- Stability:  experimental
 
-{-# LANGUAGE BangPatterns #-}
-
 module Main (main) where
 
 import Data.Bits
