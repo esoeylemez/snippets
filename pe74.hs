@@ -35,10 +35,8 @@ chainLength =
                 if j >= i
                   then ins
                   else do
-                      y <- Vum.unsafeRead arr j
-                      if x == fromIntegral y
-                        then pure i
-                        else ins
+                      y <- fromIntegral <$> Vum.unsafeRead arr j
+                      if x == y then pure i else ins
         go 0 x0
 
     where
