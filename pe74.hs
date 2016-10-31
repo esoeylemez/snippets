@@ -9,10 +9,7 @@
 module Main (main) where
 
 import Control.Monad.ST
-import Data.Foldable
 import Data.Int
-import Data.List (unfoldr)
-import Data.Tuple
 import qualified "vector-algorithms" Data.Vector.Algorithms.Search as Vas
 import qualified "vector" Data.Vector.Unboxed as Vu
 import qualified "vector" Data.Vector.Unboxed.Mutable as Vum
@@ -43,9 +40,13 @@ chainLength =
     where
     !factTable = Vu.scanl' (*) 1 (Vu.enumFromTo 1 9)
 
-    digitFact =
-        foldl' (\s i -> s + factTable `Vu.unsafeIndex` fromIntegral i) 0 .
-        unfoldr (\x -> if x == 0 then Nothing else Just (swap (divMod x 10)))
+    digitFact = go 0
+        where
+        go !s' !x'
+            | x' <= 0   = s'
+            | otherwise =
+                let (x, i) = divMod x' 10
+                in go (s' + factTable `Vu.unsafeIndex` fromIntegral i) x
 
     {-# INLINE digitFact #-}
 
