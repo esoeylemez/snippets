@@ -16,6 +16,7 @@ longest-palindrome-c: CFLAGS += -Wno-unused-result
 %: %.c Makefile
 	gcc $(CFLAGS) -o $@ $<
 
+pe74: GHCFLAGS += -O2 -fllvm
 %: %.hs Makefile
 	@mkdir -p tmp/$@
 	ghc $(GHCFLAGS) -outputdir=tmp/$@ -o $@ $<
