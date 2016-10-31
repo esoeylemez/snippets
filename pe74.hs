@@ -23,28 +23,28 @@ chainLength =
     \x0 -> runST $ do
         arr <- Vum.new 61
         let go !i !x = do
-                j <- Vas.binarySearch (Vum.unsafeTake i arr) (fromIntegral x :: Int32)
+                let !xi = fromIntegral x :: Int32
+                j <- Vas.binarySearch (Vum.unsafeTake i arr) xi
 
                 let ins = do
                         let !l = i - j
                         Vum.unsafeMove (Vum.slice (j + 1) l arr) (Vum.slice j l arr)
-                        Vum.unsafeWrite arr j (fromIntegral x)
+                        Vum.unsafeWrite arr j xi
                         go (i + 1) (digitFact x)
                     {-# INLINE ins #-}
 
                 if j >= i
                   then ins
                   else do
-                      y <- fromIntegral <$> Vum.unsafeRead arr j
-                      if x == y then pure i else ins
+                      y <- Vum.unsafeRead arr j
+                      if xi == y then pure i else ins
         go 0 x0
 
     where
     !factTable = Vu.scanl' (*) 1 (Vu.enumFromTo 1 9)
 
     digitFact =
-        foldl' (+) 0 .
-        map (\i -> factTable Vu.! fromIntegral i) .
+        foldl' (\s i -> s + factTable `Vu.unsafeIndex` fromIntegral i) 0 .
         unfoldr (\x -> if x == 0 then Nothing else Just (swap (divMod x 10)))
 
     {-# INLINE digitFact #-}
