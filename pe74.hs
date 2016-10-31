@@ -22,11 +22,11 @@ chainLength :: (Integral a, Vu.Unbox a) => a -> Int
 chainLength =
     \x0 -> runST $ do
         arr <- Vum.new 61
-        let go i x = do
+        let go !i !x = do
                 j <- Vas.binarySearch (Vum.unsafeTake i arr) (fromIntegral x :: Int32)
 
                 let ins = do
-                        let l = i - j
+                        let !l = i - j
                         Vum.unsafeMove (Vum.slice (j + 1) l arr) (Vum.slice j l arr)
                         Vum.unsafeWrite arr j (fromIntegral x)
                         go (i + 1) (digitFact x)
