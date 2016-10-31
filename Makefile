@@ -12,6 +12,7 @@ CFLAGS = --std=gnu99 -O2
 GHCFLAGS = -O -threaded -rtsopts -fdefer-typed-holes
 
 
+longest-palindrome-c: CFLAGS += -Wno-unused-result
 %: %.c Makefile
 	gcc $(CFLAGS) -o $@ $<
 
