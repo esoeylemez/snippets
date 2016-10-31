@@ -18,7 +18,7 @@ import qualified "vector" Data.Vector.Unboxed.Mutable as Vum
 chainLength :: (Integral a, Vu.Unbox a) => a -> Int
 chainLength =
     \x0 -> runST $ do
-        arr <- Vum.new 61
+        arr <- Vum.new 60
         let go !i !x = do
                 let !xi = fromIntegral x :: Int32
                 j <- Vas.binarySearch (Vum.unsafeTake i arr) xi
