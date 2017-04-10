@@ -81,9 +81,9 @@ rbToList RingBuffer{..} = do
         iterate (\i -> if i >= m then 0 else i + 1) i0
 
 
-rbBench :: forall m proxy v. (PrimMonad m, Vm.MVector v Int) => proxy v -> Gen (PrimState m) -> Int -> m ()
-rbBench _ rng n = do
-    rb <- rbNew 1000 :: m (RingBuffer (PrimState m) v Int)
+rbBench :: forall m proxy v. (PrimMonad m, Vm.MVector v Int) => proxy v -> Gen (PrimState m) -> Int -> Int -> m ()
+rbBench _ rng size n = do
+    rb <- rbNew size :: m (RingBuffer (PrimState m) v Int)
     replicateM_ n $ do
         wantPush <- bernoulli 0.7 rng
         if wantPush
@@ -93,8 +93,8 @@ rbBench _ rng n = do
 
 -- Seq version -------------------------------------------------------
 
-seqBench :: (PrimMonad m) => Gen (PrimState m) -> Int -> m ()
-seqBench rng = go mempty
+seqBench :: (PrimMonad m) => Gen (PrimState m) -> Int -> Int -> m ()
+seqBench rng size = go mempty
     where
     go _ 0 = pure ()
     go xs'' n = do
@@ -102,7 +102,7 @@ seqBench rng = go mempty
         if wantPush
           then do
               x :: Int <- uniform rng
-              let xs | Seq.length xs'' >= 1000 =
+              let xs | Seq.length xs'' >= size =
                          case viewl xs'' of
                            EmptyL   -> xs''
                            _ :< xs' -> xs' |> x
@@ -116,11 +116,12 @@ seqBench rng = go mempty
 
 main :: IO ()
 main = do
-    nStr : variant : _ <- getArgs
+    sizeStr : nStr : variant : _ <- getArgs
     let n = read nStr
+        s = read sizeStr
     rng <- create
     case variant of
-      "s"  -> seqBench rng n
-      "vb" -> rbBench (Proxy :: Proxy Vbm.MVector) rng n
-      "vu" -> rbBench (Proxy :: Proxy Vum.MVector) rng n
+      "s"  -> seqBench rng s n
+      "vb" -> rbBench (Proxy :: Proxy Vbm.MVector) rng s n
+      "vu" -> rbBench (Proxy :: Proxy Vum.MVector) rng s n
       _    -> pure ()
