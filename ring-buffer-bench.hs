@@ -22,8 +22,8 @@ import System.Random.MWC.Distributions
 
 data RingBuffer s v a =
     RingBuffer {
-      _rbStart :: !(MutVar s Int),
-      _rbLen   :: !(MutVar s Int),
+      _rbLeft  :: !(MutVar s Int),
+      _rbRight :: !(MutVar s Int),
       _rbVec   :: v s a
     }
 
@@ -32,8 +32,8 @@ type RingBufferIO = RingBuffer (PrimState IO)
 
 rbNew :: (PrimMonad m, Vm.MVector v a) => Int -> m (RingBuffer (PrimState m) v a)
 rbNew n = do
-    _rbStart <- newMutVar 0
-    _rbLen <- newMutVar 0
+    _rbLeft <- newMutVar (-1)
+    _rbRight <- newMutVar 0
     _rbVec <- Vm.new n
     pure RingBuffer{..}
 
@@ -41,44 +41,40 @@ rbNew n = do
 rbPop :: (PrimMonad m, Vm.MVector v a) => RingBuffer (PrimState m) v a -> m (Maybe a)
 rbPop RingBuffer{..} = do
     let len = Vm.length _rbVec
-    n <- readMutVar _rbLen
-    if n <= 0
+    i''' <- readMutVar _rbLeft
+    if i''' == -1
       then pure Nothing
       else do
-          writeMutVar _rbLen $! n - 1
+          j <- readMutVar _rbRight
 
-          i'' <- readMutVar _rbStart
-          let i' = i'' + 1
-              i | i' >= len = 0
+          let i'' = i''' + 1
+              i' | i'' >= len = 0
+                 | otherwise  = i''
+
+              i | i' == j   = -1
                 | otherwise = i'
 
-          writeMutVar _rbStart $! i
-          Just <$> Vm.read _rbVec i''
+          writeMutVar _rbLeft i
+          Just <$> Vm.read _rbVec i'''
 
 
 rbPush :: (PrimMonad m, Vm.MVector v a) => RingBuffer (PrimState m) v a -> a -> m ()
 rbPush RingBuffer{..} x = do
     let len = Vm.length _rbVec
-    i' <- readMutVar _rbStart
-    n' <- readMutVar _rbLen
+    i' <- readMutVar _rbLeft
+    j'' <- readMutVar _rbRight
 
-    let i | i' <= 0   = len - 1
-          | otherwise = i' - 1
-        n | n' >= len = len
-          | otherwise = n' + 1
+    let i | i' == -1  = j''
+          | i' == j'' = j
+          | otherwise = i'
 
-    writeMutVar _rbStart $! i
-    writeMutVar _rbLen $! n
-    Vm.write _rbVec i x
+        j' = j'' + 1
+        j | j' >= len = 0
+          | otherwise = j'
 
-
-rbToList :: (PrimMonad m, Vm.MVector v a) => RingBuffer (PrimState m) v a -> m [a]
-rbToList RingBuffer{..} = do
-    let m = Vm.length _rbVec - 1
-    i0 <- readMutVar _rbStart
-    n  <- readMutVar _rbLen
-    mapM (Vm.read _rbVec) . take n $
-        iterate (\i -> if i >= m then 0 else i + 1) i0
+    writeMutVar _rbLeft $! i
+    writeMutVar _rbRight $! j
+    Vm.write _rbVec j'' x
 
 
 rbBench :: forall m proxy v. (PrimMonad m, Vm.MVector v Int) => proxy v -> Gen (PrimState m) -> Int -> Int -> m ()
